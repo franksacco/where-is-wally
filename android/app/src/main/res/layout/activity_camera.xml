@@ -26,4 +26,12 @@
         android:clickable="true"
         android:focusable="true" />
 
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="256dp"
+        android:layout_height="256dp"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        app:srcCompat="@drawable/ic_launcher_background" />
+
 </RelativeLayout>
