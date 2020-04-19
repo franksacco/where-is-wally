@@ -1,34 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:padding="16dp"
+    android:background="#4ec4ce"
     tools:context=".MainActivity">
 
-    <TextView
+    <ImageView
+        app:srcCompat="@drawable/title"
+        android:contentDescription="TODO"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/app_title"
-        android:textSize="56sp"
-        android:layout_margin="36dp"
-        android:textAlignment="center" />
+        android:layout_height="150dp"
+        android:layout_weight="1.5"
+        android:layout_marginTop="24dp" />
 
-    <Button
-        android:id="@+id/button_open_camera"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="24dp"
-        android:text="Open camera" />
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingVertical="24dp"
+        android:paddingHorizontal="48dp">
 
-    <Button
-        android:id="@+id/button_load_image"
+        <Button
+            android:id="@+id/button_open_camera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open camera" />
+
+        <Button
+            android:id="@+id/button_load_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="load image" />
+
+    </LinearLayout>
+
+    <ImageView
+        app:srcCompat="@drawable/wally_bottom"
+        android:contentDescription="TODO"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="24dp"
-        android:text="load image" />
+        android:layout_height="120dp"
+        android:layout_weight="0.6" />
 
 </LinearLayout>
