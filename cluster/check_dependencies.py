@@ -11,6 +11,7 @@ from keras.preprocessing.image import load_img
 import glob
 import matplotlib.pyplot as plt
 
+from keras import backend as K
 from keras.models import Model
 from keras.layers import Input, Reshape, UpSampling2D
 from keras.layers.core import Dropout

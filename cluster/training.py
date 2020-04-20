@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
 import os
 
 import numpy as np
@@ -10,8 +9,8 @@ from keras.preprocessing.image import img_to_array
 from keras.preprocessing.image import load_img
 
 import glob
-import matplotlib.pyplot as plt
 
+from keras import backend as K
 from keras.models import Model
 from keras.layers import Input, Reshape, UpSampling2D
 from keras.layers.core import Dropout
@@ -19,7 +18,6 @@ from keras.layers.convolutional import Conv2D
 from keras.layers.pooling import MaxPooling2D
 from keras.layers.merge import concatenate
 from keras.optimizers import Adam
-
 from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 
 
@@ -35,6 +33,7 @@ VALIDATION_SPLIT = 0.1
 BATCH_SIZE       = 16
 STEPS_PER_EPOCH  = 32
 EPOCHS           = 20
+LOSS_FUNCTION    = 'wbce'  # 'wbce' or 'dice' or 'jacc'
 
 
 # Data Augmentation
@@ -75,23 +74,77 @@ validation_mask_gen = mask_data_gen.flow_from_directory(**flow_args,
                                                         color_mode='grayscale',
                                                         subset='validation')
 
+def normalize_inputs(img, mask):
+    img = img / 255
+    mask = mask / 255
+    mask[mask > 0.5] = 1
+    mask[mask <= 0.5] = 0
+    return img, mask
+
 def training_gen():
     while True:
         for img, mask in zip(train_image_gen, train_mask_gen):
-            img = img / 255
-            mask = mask / 255
-            mask[mask > 0.5] = 1
-            mask[mask <= 0.5] = 0
-            yield img, mask
+            yield normalize_inputs(img, mask)
             
 def validation_gen():
     while True:
         for img, mask in zip(validation_image_gen, validation_mask_gen):
-            img = img / 255
-            mask = mask / 255
-            mask[mask > 0.5] = 1
-            mask[mask <= 0.5] = 0
-            yield img, mask
+            yield normalize_inputs(img, mask)
+
+
+# Loss functions
+
+def weighted_binary_crossentropy(y_true, y_pred):
+    # Calulate weights    
+    zero_count = K.sum(1 - y_true)
+    one_count = K.sum(y_true)
+    tot = one_count + zero_count
+    zero_weight = 1 - zero_count / tot
+    one_weight = 1 - one_count / tot
+    
+    # Calculate the binary crossentropy
+    bce = K.binary_crossentropy(y_true, y_pred)
+    
+    # Apply the weights and return the mean error
+    weight_vector = y_true * one_weight + (1. - y_true) * zero_weight
+    return K.mean(weight_vector * bce)
+
+def dice_loss(y_true, y_pred, smooth=1):
+    intersection = K.sum(y_true * y_pred, axis=-1)
+    union = K.sum(K.square(y_true), axis=-1) + K.sum(K.square(y_pred), axis=-1)
+    return 1 - (2. * intersection + smooth) / (union + smooth)
+
+def jaccard_loss(y_true, y_pred, smooth=100):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    summed = K.sum(K.abs(y_true) + K.abs(y_pred), axis=-1)
+    jac = (intersection + smooth) / (summed - intersection + smooth)
+    return (1 - jac) * smooth
+
+losses = {
+    'wbce': weighted_binary_crossentropy,
+    'dice': dice_loss,
+    'jacc': jaccard_loss
+}
+
+
+# Metrics
+
+def recall(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+def precision(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+def f1_score(y_true, y_pred):
+    p = precision(y_true, y_pred)
+    r = recall(y_true, y_pred)
+    return 2 * ( (p * r) / (p + r + K.epsilon()) )
 
 
 # Model definition
@@ -145,7 +198,11 @@ def unet(pretrained_weights=None):
     conv10 = Conv2D(1, 1, activation='sigmoid')(conv9)
 
     model = Model(inputs=[inputs], outputs=[conv10])
-    model.compile(optimizer=Adam(lr=1e-4), loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer=Adam(lr=1e-4),
+        loss=losses[LOSS_FUNCTION],
+        metrics=[f1_score, precision, recall]
+    )
 
     if pretrained_weights:
         model.load_weights(pretrained_weights)
@@ -161,15 +218,16 @@ earlystopper = EarlyStopping(monitor='loss',
                              patience=5,
                              verbose=1)
 
-name = 'unet-b%d-s%d-e%d.{epoch:02d}.hdf5' % (BATCH_SIZE, STEPS_PER_EPOCH, EPOCHS)
+name = 'unet-%s-b%d-s%d-e%d.{epoch:02d}.hdf5' % (LOSS_FUNCTION, BATCH_SIZE, STEPS_PER_EPOCH, EPOCHS)
 checkpointer = ModelCheckpoint(os.path.join(MODELS_PATH, name),
-                               monitor='val_acc',
+                               monitor='val_f1_score',
                                save_best_only=True,
                                save_weights_only=False,
                                mode='max',
                                verbose=1)
 
 tensorboard = TensorBoard(log_dir='logs')
+
 
 model.fit_generator(training_gen(),
                     steps_per_epoch=STEPS_PER_EPOCH,
