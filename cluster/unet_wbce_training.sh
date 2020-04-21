@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH --job-name=unet-training
+#SBATCH --job-name=unet_wbce_training
 #SBATCH --output=%x.o%j
 #SBATCH --error=%x.e%j
 #SBATCH --nodes=1
@@ -17,6 +17,6 @@ module load miniconda3
 source "$CONDA_PREFIX/etc/profile.d/conda.sh"
 conda activate machine-learning-cuda-10.0
 
-python training.py
+python main.py --batch-size 16 --steps-per-epoch 32 --epochs 20 --loss wbce
 
 conda deactivate
