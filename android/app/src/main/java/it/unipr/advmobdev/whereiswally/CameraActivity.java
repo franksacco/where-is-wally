@@ -2,9 +2,8 @@ package it.unipr.advmobdev.whereiswally;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -14,11 +13,11 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -27,7 +26,6 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -37,10 +35,17 @@ import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Camera activity used for taking pictures.
@@ -142,7 +147,7 @@ public class CameraActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
-        textureView = findViewById(R.id.texture);
+        textureView = findViewById(R.id.cameraPreview);
         textureView.setSurfaceTextureListener(textureListener);
 
         FloatingActionButton takePictureButton = findViewById(R.id.btn_take_picture);
@@ -212,7 +217,9 @@ public class CameraActivity extends AppCompatActivity {
             }
 
             // Ask permission for camera.
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED)
+            {
                 ActivityCompat.requestPermissions(
                         CameraActivity.this,
                         new String[]{Manifest.permission.CAMERA},
@@ -222,6 +229,39 @@ public class CameraActivity extends AppCompatActivity {
             }
             // Finally, open the camera device.
             cameraManager.openCamera(cameraId, stateCallback, null);
+
+            /* TODO: fix preview ratio
+            Log.d(TAG, "Image: " + imageDimension.getWidth() + "x" + imageDimension.getHeight());
+            Log.d(TAG, "Preview: " + textureView.getWidth() + "x" + textureView.getHeight());
+
+            int width = textureView.getHeight(), height = textureView.getWidth();
+            int previewWidth = imageDimension.getWidth(), previewHeight = imageDimension.getHeight();
+
+            float ratioSurface = (float) width / height;
+            float ratioPreview = (float) previewWidth / previewHeight;
+
+            float scaleX;
+            float scaleY;
+            if (ratioSurface > ratioPreview) {
+                scaleX = (float) height / previewHeight;
+                scaleY = 1;
+            } else {
+                scaleX = 1;
+                scaleY = (float) width / previewWidth;
+            }
+
+            Matrix matrix = new Matrix();
+            matrix.setScale(scaleX, scaleY);
+            textureView.setTransform(matrix);
+
+            float scaledWidth = width * scaleX;
+            float scaledHeight = height * scaleY;
+
+            float dx = (width - scaledWidth) / 2;
+            float dy = (height - scaledHeight) / 2;
+            textureView.setTranslationX(dx);
+            textureView.setTranslationY(dy);
+             */
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -236,11 +276,6 @@ public class CameraActivity extends AppCompatActivity {
             cameraDevice.close();
             cameraDevice = null;
         }
-
-        //if (null != imageReader) {
-        //    imageReader.close();
-        //    imageReader = null;
-        //}
     }
 
     /**
@@ -331,36 +366,47 @@ public class CameraActivity extends AppCompatActivity {
                     ByteBuffer buffer = image.getPlanes()[0].getBuffer();
                     byte[] bytes = new byte[buffer.capacity()];
                     buffer.get(bytes);
+                    image.close();
 
-                    // TODO save image
-                    final Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    final ImageView iv = findViewById(R.id.imageView);
+                    // Save the acquired image in pictures folder.
+                    File path = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
+                    final File file = new File(path, "IMG_" + sdf.format(new Date()) + ".jpg");
+                    try {
+                        // The WRITE_EXTERNAL_STORAGE permission is not need since API level 19
+                        // because we are writing in application-specific directories. See
+                        // https://developer.android.com/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE
+                        OutputStream os = new FileOutputStream(file);
+                        os.write(bytes);
+                        os.close();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
+                    }
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            iv.setImageBitmap(bitmap);
+                            Toast.makeText(CameraActivity.this,
+                                    "Photo saved in " + file.getAbsolutePath(),
+                                    Toast.LENGTH_SHORT).show();
                         }
                     });
 
-                    image.close();
+                    // Pass the filename of the acquired image to FindWallyActivity.
+                    Intent intent = new Intent(CameraActivity.this, FindWallyActivity.class);
+                    intent.putExtra(FindWallyActivity.EXTRA_IMG_FILENAME, file.getAbsolutePath());
+                    startActivity(intent);
+
                 }
             }, backgroundHandler);
-
-            // We need this listener for restarting the camera preview.
-            final CameraCaptureSession.CaptureCallback captureListener = new CameraCaptureSession.CaptureCallback() {
-                @Override
-                public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
-                    super.onCaptureCompleted(session, request, result);
-                    Toast.makeText(CameraActivity.this, "Saved", Toast.LENGTH_SHORT).show();
-                    createCameraPreview();
-                }
-            };
 
             cameraDevice.createCaptureSession(outputSurface, new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     try{
-                        session.capture(captureBuilder.build(), captureListener, backgroundHandler);
+                        session.capture(captureBuilder.build(), null, backgroundHandler);
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -380,7 +426,7 @@ public class CameraActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 // Close the activity.
-                Toast.makeText(CameraActivity.this,
+                Toast.makeText(this,
                         "You can't use the camera without granting permission", Toast.LENGTH_LONG)
                         .show();
                 finish();

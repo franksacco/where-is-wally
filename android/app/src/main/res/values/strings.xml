@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Where is Wally</string>
     <string name="app_title">Where\'s Wally?</string>
+    <string name="wally_head">Wally head</string>
+    <string name="where_is_wally_logo">Where\'s Wally logo</string>
+    <string name="btn_open_camera">Open camera</string>
+    <string name="btn_load_image">Load image</string>
 </resources>

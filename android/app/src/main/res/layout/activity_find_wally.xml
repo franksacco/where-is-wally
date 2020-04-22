@@ -1,51 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="#4ec4ce"
-    tools:context=".MainActivity">
+    tools:context=".FindWallyActivity">
 
     <ImageView
-        app:srcCompat="@drawable/title"
-        android:contentDescription="@string/where_is_wally_logo"
+        android:id="@+id/img_input"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:layout_weight="1.5"
-        android:layout_marginTop="24dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center"
         android:paddingVertical="24dp"
         android:paddingHorizontal="48dp">
 
         <Button
-            android:id="@+id/btn_open_camera"
+            android:id="@+id/btn_find_wally"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/btn_open_camera" />
+            android:text="Find Wally" />
 
         <Button
-            android:id="@+id/btn_load_image"
+            android:id="@+id/btn_cancel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/btn_load_image" />
+            android:text="Cancel" />
 
     </LinearLayout>
-
-    <ImageView
-        app:srcCompat="@drawable/wally_bottom"
-        android:contentDescription="@string/wally_head"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:layout_weight="0.6" />
 
 </LinearLayout>
