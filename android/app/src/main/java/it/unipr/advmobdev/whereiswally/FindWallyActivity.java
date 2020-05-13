@@ -9,16 +9,29 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 /**
  * This is the activity where the magic happens.
  */
 public class FindWallyActivity extends AppCompatActivity {
+    /**
+     * Activity tag for logging.
+     */
     private static final String TAG = "FindWallyActivity";
 
+    /**
+     * Name of the intent that contains input image filename.
+     */
     public static final String EXTRA_IMG_FILENAME = "extra_img_filename";
 
+    /**
+     * Image view that shows input or output image.
+     */
     private ImageView imageView;
+    /**
+     * Input image as bitmap.
+     */
     private Bitmap inputImage;
 
     @Override
@@ -40,7 +53,7 @@ public class FindWallyActivity extends AppCompatActivity {
         findWallyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: find Wally
+                FindWallyActivity.this.loadAndRunModel();
             }
         });
 
@@ -49,6 +62,48 @@ public class FindWallyActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 finish();
+            }
+        });
+    }
+
+    /**
+     * Load and run the model using background tasks.
+     */
+    private void loadAndRunModel() {
+        new ModelExecutor(this).start();
+    }
+
+    /**
+     * Get the input image.
+     * @return the input image as a bitmap.
+     */
+    public Bitmap getInputImage() {
+        return inputImage;
+    }
+
+    /**
+     * Show the output image when the model execution ends.
+     * @param outputImage The image to be shown.
+     */
+    public void showOutputImage(final Bitmap outputImage) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                imageView.setImageBitmap(outputImage);
+            }
+        });
+    }
+
+    /**
+     * Show a message error to the user.
+     * @param message The error message to be shown.
+     */
+    public void showError(final String message) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FindWallyActivity.this,
+                        message, Toast.LENGTH_SHORT).show();
             }
         });
     }
