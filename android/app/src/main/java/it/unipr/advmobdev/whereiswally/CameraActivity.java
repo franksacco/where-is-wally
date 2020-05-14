@@ -373,7 +373,7 @@ public class CameraActivity extends AppCompatActivity {
                     SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault());
                     final File file = new File(path, "IMG_" + sdf.format(new Date()) + ".jpg");
                     try {
-                        // The WRITE_EXTERNAL_STORAGE permission is not need since API level 19
+                        // The WRITE_EXTERNAL_STORAGE permission is not needed since API level 19
                         // because we are writing in application-specific directories. See
                         // https://developer.android.com/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE
                         OutputStream os = new FileOutputStream(file);

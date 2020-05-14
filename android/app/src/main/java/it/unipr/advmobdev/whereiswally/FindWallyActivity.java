@@ -9,12 +9,13 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 /**
  * This is the activity where the magic happens.
  */
-public class FindWallyActivity extends AppCompatActivity {
+public class FindWallyActivity extends AppCompatActivity implements View.OnClickListener {
     /**
      * Activity tag for logging.
      */
@@ -24,6 +25,11 @@ public class FindWallyActivity extends AppCompatActivity {
      * Name of the intent that contains input image filename.
      */
     public static final String EXTRA_IMG_FILENAME = "extra_img_filename";
+
+    /**
+     * Relative layout used as overlay during model execution.
+     */
+    private LinearLayout loadingOverlay;
 
     /**
      * Image view that shows input or output image.
@@ -39,31 +45,37 @@ public class FindWallyActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_find_wally);
 
+        loadingOverlay = findViewById(R.id.loading_overlay);
         imageView = findViewById(R.id.img_input);
         // Load the passed image from the storage.
         String filename = getIntent().getStringExtra(EXTRA_IMG_FILENAME);
         if (filename != null) {
             Log.d(TAG, "Image filename: " + filename);
-
             inputImage = BitmapFactory.decodeFile(filename);
             imageView.setImageBitmap(inputImage);
         }
 
         Button findWallyButton = findViewById(R.id.btn_find_wally);
-        findWallyButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FindWallyActivity.this.loadAndRunModel();
-            }
-        });
+        findWallyButton.setOnClickListener(this);
 
         Button cancelButton = findViewById(R.id.btn_cancel);
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        cancelButton.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.btn_find_wally:
+                // Show loading spinner with a transition.
+                loadingOverlay.setVisibility(View.VISIBLE);
+                loadingOverlay.animate().alpha(1);
+                // Start background thread for model execution.
+                FindWallyActivity.this.loadAndRunModel();
+                break;
+            case R.id.btn_cancel:
                 finish();
-            }
-        });
+                break;
+        }
     }
 
     /**
@@ -89,6 +101,17 @@ public class FindWallyActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                // Hide loading spinner with a transition.
+                loadingOverlay
+                        .animate()
+                        .alpha(0)
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                loadingOverlay.setVisibility(View.GONE);
+                            }
+                        });
+                // Show the output image.
                 imageView.setImageBitmap(outputImage);
             }
         });

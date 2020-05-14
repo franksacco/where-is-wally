@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_find_wally"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -11,29 +12,53 @@
     <ImageView
         android:id="@+id/img_input"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent"
+        android:contentDescription="@string/img_find_wally" />
+
+    <Button
+        android:id="@+id/btn_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="12dp"
+        android:text="@string/btn_cancel"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#20000000"
+        style="?attr/materialButtonOutlinedStyle" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/btn_find_wally"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:text="@string/btn_find_wally"
+        android:layout_margin="24dp"
+        style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton" />
 
     <LinearLayout
+        android:id="@+id/loading_overlay"
+        android:translationZ="8dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingVertical="24dp"
-        android:paddingHorizontal="48dp">
+        android:gravity="center"
+        android:background="#C0000000"
+        android:alpha="0"
+        android:visibility="gone">
 
-        <Button
-            android:id="@+id/btn_find_wally"
-            android:layout_width="match_parent"
+        <ProgressBar
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Find Wally" />
+            android:indeterminate="true"
+            android:padding="24dp" />
 
-        <Button
-            android:id="@+id/btn_cancel"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Cancel" />
-
+            android:textColor="@android:color/white"
+            android:text="@string/txt_loading"
+            android:textSize="20sp" />
     </LinearLayout>
 
-</LinearLayout>
+</RelativeLayout>
