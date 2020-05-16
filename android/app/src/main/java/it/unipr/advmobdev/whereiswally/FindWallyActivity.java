@@ -4,27 +4,25 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+
 /**
  * This is the activity where the magic happens.
  */
 public class FindWallyActivity extends AppCompatActivity implements View.OnClickListener {
     /**
-     * Activity tag for logging.
-     */
-    private static final String TAG = "FindWallyActivity";
-
-    /**
      * Name of the intent that contains input image filename.
      */
-    public static final String EXTRA_IMG_FILENAME = "extra_img_filename";
+    public static final String EXTRA_IMG_URI = "extra_img_filename";
 
     /**
      * Relative layout used as overlay during model execution.
@@ -48,11 +46,19 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
         loadingOverlay = findViewById(R.id.loading_overlay);
         imageView = findViewById(R.id.img_input);
         // Load the passed image from the storage.
-        String filename = getIntent().getStringExtra(EXTRA_IMG_FILENAME);
-        if (filename != null) {
-            Log.d(TAG, "Image filename: " + filename);
-            inputImage = BitmapFactory.decodeFile(filename);
+        String uri = getIntent().getStringExtra(EXTRA_IMG_URI);
+        try {
+            if (uri == null) {
+                throw new FileNotFoundException("Empty image uri in intent");
+            }
+            InputStream is = getContentResolver().openInputStream(Uri.parse(uri));
+            inputImage = BitmapFactory.decodeStream(is);
             imageView.setImageBitmap(inputImage);
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            finish();
+            return;
         }
 
         Button findWallyButton = findViewById(R.id.btn_find_wally);

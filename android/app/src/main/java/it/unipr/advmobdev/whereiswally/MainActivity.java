@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (uri != null) {
                     // Pass the filename of the selected image to FindWallyActivity.
                     Intent intent = new Intent(this, FindWallyActivity.class);
-                    intent.putExtra(FindWallyActivity.EXTRA_IMG_FILENAME, uri.getPath());
+                    intent.putExtra(FindWallyActivity.EXTRA_IMG_URI, uri.toString());
                     startActivity(intent);
                 }
             }
