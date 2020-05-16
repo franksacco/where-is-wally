@@ -1,6 +1,7 @@
 package it.unipr.advmobdev.whereiswally;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.util.Log;
 
@@ -45,7 +46,7 @@ class ModelExecutor extends Thread {
     /**
      * Maximum number of concurrent sub-image tasks.
      */
-    private static final int MAX_NUM_THREAD = 4;
+    private static final int MAX_NUM_THREAD = 2;
 
     /**
      * Task that predict the mask for a single sub-image.
@@ -139,32 +140,20 @@ class ModelExecutor extends Thread {
         image = makeSizeMultipleOfSubImage(image);
         Log.d(TAG, "Padded size: " + image.getHeight() + " x " + image.getWidth());
 
-        // TODO test with images with different size
-        assert image.getHeight() == SUB_IMAGE_SIZE;
-        assert image.getWidth() == SUB_IMAGE_SIZE;
+        // Determine how many sub-images and tasks will be created for each axis.
+        int numTasksX = image.getWidth() / SUB_IMAGE_SIZE;
+        int numTasksY = image.getHeight() / SUB_IMAGE_SIZE;
+        Log.d(TAG, "Number of sub-images/tasks: " + (numTasksX * numTasksY));
 
-        // Determine how many sub-images will be analyzed.
-        int numSubImagesY = image.getHeight() / SUB_IMAGE_SIZE;
-        int numSubImagesX = image.getWidth() / SUB_IMAGE_SIZE;
-        Log.d(TAG, "Number of sub-images: " + (numSubImagesY * numSubImagesX));
-
-        List<Callable<Bitmap>> tasks = new ArrayList<>();
-        Bitmap subImage;
-        for (int j = 0; j < numSubImagesY; j++) {
-            for (int i = 0; i < numSubImagesX; i++) {
-                subImage = Bitmap.createBitmap(image,
-                        i * SUB_IMAGE_SIZE, j * SUB_IMAGE_SIZE,
-                        SUB_IMAGE_SIZE, SUB_IMAGE_SIZE);
-                tasks.add(new SubImageTask(interpreter, subImage));
-            }
-        }
-
+        // Associate each sub-image to a single task.
+        List<Callable<Bitmap>> tasks = getTaskList(interpreter, image, numTasksX, numTasksY);
+        // Execute all tasks using a thread pool with a fixed number of threads.
         ExecutorService executor = Executors.newFixedThreadPool(MAX_NUM_THREAD);
+        Bitmap mask = null;
         try {
             List<Future<Bitmap>> results = executor.invokeAll(tasks);
-            for (Future<Bitmap> f: results) {
-                activity.showOutputImage(f.get());
-            }
+            // Create the final mask to be applied on the image.
+            mask = composeSubMasks(image, results, numTasksX, numTasksY);
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -173,9 +162,19 @@ class ModelExecutor extends Thread {
         } catch (ExecutionException e) {
             e.printStackTrace();
             activity.showError(e.getMessage());
+
+        } finally {
+            interpreter.close();
         }
 
-        interpreter.close();
+        if (mask != null) {
+            applyMask(image, mask);
+
+            // Restore the original size of the image.
+            image = restoreInitialSize(image);
+            // Show final result to the user.
+            activity.showOutputImage(image);
+        }
     }
 
     /**
@@ -218,6 +217,110 @@ class ModelExecutor extends Thread {
         if (width % size != 0) {
             width += size - width % size;
         }
+
+        ImageProcessor imageProcessor = new ImageProcessor.Builder()
+                .add(new ResizeWithCropOrPadOp(height, width))
+                .build();
+        tensorImage = imageProcessor.process(tensorImage);
+        return tensorImage.getBitmap();
+    }
+
+    /**
+     * Create task list composed by callable objects that returns the mask
+     * associated to the provided sub-image using the same interpreter.
+     *
+     * @param interpreter The TensorFlow Lite interpreter.
+     * @param image The input image.
+     * @param numSubImagesX The number of sub-images along the x-axis.
+     * @param numSubImagesY The number of sub-images along the y-axis.
+     * @return the list of callable objects.
+     */
+    private List<Callable<Bitmap>> getTaskList(Interpreter interpreter,
+                                               Bitmap image,
+                                               int numSubImagesX,
+                                               int numSubImagesY)
+    {
+        List<Callable<Bitmap>> tasks = new ArrayList<>();
+        Bitmap subImage;
+        for (int j = 0; j < numSubImagesY; j++) {
+            for (int i = 0; i < numSubImagesX; i++) {
+                subImage = Bitmap.createBitmap(image,
+                        i * SUB_IMAGE_SIZE, j * SUB_IMAGE_SIZE,
+                        SUB_IMAGE_SIZE, SUB_IMAGE_SIZE);
+                tasks.add(new SubImageTask(interpreter, subImage));
+            }
+        }
+        return tasks;
+    }
+
+    /**
+     * Compose masks from each task execution to generate the final
+     * mask with the same size of the given image.
+     *
+     * @param image The input image.
+     * @param results The list of result from task execution.
+     * @param numSubImagesX The number of sub-images along the x-axis.
+     * @param numSubImagesY The number of sub-images along the y-axis.
+     * @return the final mask composed by all generated sub-masks.
+     * @throws ExecutionException if a task aborted throwing an exception.
+     * @throws InterruptedException if a task was interrupted.
+     */
+    private Bitmap composeSubMasks(Bitmap image, List<Future<Bitmap>> results,
+                                   int numSubImagesX, int numSubImagesY)
+            throws ExecutionException, InterruptedException
+    {
+        Bitmap mask = Bitmap.createBitmap(image.getWidth(), image.getHeight(), image.getConfig());
+        Canvas canvas = new Canvas(mask);
+        for (int j = 0; j < numSubImagesY; j++) {
+            for (int i = 0; i < numSubImagesX; i++) {
+                canvas.drawBitmap(
+                        results.get(i + j * numSubImagesX).get(),
+                        i * SUB_IMAGE_SIZE,
+                        j * SUB_IMAGE_SIZE,
+                        null
+                );
+            }
+        }
+        return mask;
+    }
+
+    /**
+     * Apply provided mask to the given image converting to grayscale pixels
+     * that not corresponds to a white pixel in the mask.
+     *
+     * @param image The image to be filtered.
+     * @param mask The mask to be applied.
+     */
+    private void applyMask(Bitmap image, Bitmap mask) {
+        int rgb, r, g, b, gray;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                // Convert to grayscale pixels that not corresponds
+                // to a white pixel in the mask.
+                if (mask.getPixel(x, y) != Color.WHITE) {
+                    rgb = image.getPixel(x, y);
+                    r = (rgb >> 16) & 0xff;
+                    g = (rgb >> 8) & 0xff;
+                    b = rgb & 0xff;
+                    gray = (r + g + b) / 3;
+                    image.setPixel(x, y,
+                            0xff000000 | (gray << 16) | (gray << 8) | gray);
+                }
+            }
+        }
+    }
+
+    /**
+     * Restore the original size of the input image.
+     *
+     * @param image The image to be processed.
+     * @return the precessed image.
+     */
+    private Bitmap restoreInitialSize(Bitmap image) {
+        TensorImage tensorImage = TensorImage.fromBitmap(image);
+
+        int width = activity.getInputImage().getWidth();
+        int height = activity.getInputImage().getHeight();
 
         ImageProcessor imageProcessor = new ImageProcessor.Builder()
                 .add(new ResizeWithCropOrPadOp(height, width))
