@@ -9,11 +9,12 @@
     android:background="#4ec4ce"
     tools:context=".FindWallyActivity">
 
-    <ImageView
+    <it.unipr.advmobdev.whereiswally.CustomImageView
         android:id="@+id/img_input"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:contentDescription="@string/img_find_wally" />
+        android:contentDescription="@string/img_find_wally"
+        android:scaleType="matrix" />
 
     <Button
         android:id="@+id/btn_cancel"

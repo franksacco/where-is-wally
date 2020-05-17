@@ -396,7 +396,7 @@ public class CameraActivity extends AppCompatActivity {
 
                     // Pass the filename of the acquired image to FindWallyActivity.
                     Intent intent = new Intent(CameraActivity.this, FindWallyActivity.class);
-                    intent.putExtra(FindWallyActivity.EXTRA_IMG_FILENAME, file.getAbsolutePath());
+                    intent.putExtra(FindWallyActivity.EXTRA_IMG_URI, file.getAbsolutePath());
                     startActivity(intent);
 
                 }
