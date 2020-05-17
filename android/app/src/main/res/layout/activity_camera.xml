@@ -1,29 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#4ec4ce"
     tools:context=".CameraActivity">
 
     <TextureView
         android:id="@+id/cameraPreview"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="match_parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        style="@style/Widget.MaterialComponents.FloatingActionButton"
-        app:srcCompat="@android:drawable/ic_menu_camera"
         android:id="@+id/btn_take_picture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
+        android:layout_gravity="center_horizontal|bottom"
         android:layout_margin="36dp"
         android:clickable="true"
-        android:focusable="true"/>
+        android:focusable="true"
+        app:srcCompat="@android:drawable/ic_menu_camera"
+        style="@style/Widget.MaterialComponents.FloatingActionButton" />
 
-</LinearLayout>
+</FrameLayout>

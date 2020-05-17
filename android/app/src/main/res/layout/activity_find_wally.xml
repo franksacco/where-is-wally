@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/layout_find_wally"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#4ec4ce"
     tools:context=".FindWallyActivity">
 
@@ -20,7 +19,7 @@
         android:id="@+id/btn_cancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
+        android:layout_gravity="end|top"
         android:layout_margin="12dp"
         android:text="@string/btn_cancel"
         android:textColor="@android:color/white"
@@ -31,8 +30,7 @@
         android:id="@+id/btn_find_wally"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
+        android:layout_gravity="center_horizontal|bottom"
         android:text="@string/btn_find_wally"
         android:layout_margin="24dp"
         style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton" />
@@ -62,4 +60,4 @@
             android:textSize="20sp" />
     </LinearLayout>
 
-</RelativeLayout>
+</FrameLayout>
