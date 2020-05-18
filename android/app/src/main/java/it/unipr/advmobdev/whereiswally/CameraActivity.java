@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -131,9 +132,7 @@ public class CameraActivity extends AppCompatActivity {
      */
     private CameraCaptureSession cameraCaptureSessions;
 
-    //private CaptureRequest captureRequest;
-    private Size imageDimension;
-    //private ImageReader imageReader;
+    private Size imageDimensions;
 
     /**
      * Background thread used for updating the preview.
@@ -186,10 +185,11 @@ public class CameraActivity extends AppCompatActivity {
 
         startBackgroundThread();
         if (textureView.isAvailable()) {
-            // If texture view ias already available, we open the camera device.
+            // If texture view is already available, open the camera device.
             openCamera();
         } else {
-            // Otherwise (when the activity is started for the first time), we setup the texture listener.
+            // Otherwise (when the activity is started for the first time),
+            // setup the texture listener.
             textureView.setSurfaceTextureListener(textureListener);
         }
     }
@@ -213,7 +213,7 @@ public class CameraActivity extends AppCompatActivity {
             CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             if (map != null) {
-                imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+                imageDimensions = map.getOutputSizes(SurfaceTexture.class)[0];
             }
 
             // Ask permission for camera.
@@ -230,38 +230,13 @@ public class CameraActivity extends AppCompatActivity {
             // Finally, open the camera device.
             cameraManager.openCamera(cameraId, stateCallback, null);
 
-            /* TODO: fix preview ratio
-            Log.d(TAG, "Image: " + imageDimension.getWidth() + "x" + imageDimension.getHeight());
-            Log.d(TAG, "Preview: " + textureView.getWidth() + "x" + textureView.getHeight());
-
-            int width = textureView.getHeight(), height = textureView.getWidth();
-            int previewWidth = imageDimension.getWidth(), previewHeight = imageDimension.getHeight();
-
-            float ratioSurface = (float) width / height;
-            float ratioPreview = (float) previewWidth / previewHeight;
-
-            float scaleX;
-            float scaleY;
-            if (ratioSurface > ratioPreview) {
-                scaleX = (float) height / previewHeight;
-                scaleY = 1;
-            } else {
-                scaleX = 1;
-                scaleY = (float) width / previewWidth;
-            }
-
+            // Calculate the matrix to fit image inside the view.
+            float xScale = ((float) imageDimensions.getHeight()) / textureView.getWidth();
+            float yScale = ((float) imageDimensions.getWidth()) / textureView.getHeight();
             Matrix matrix = new Matrix();
-            matrix.setScale(scaleX, scaleY);
+            matrix.setScale(xScale, yScale);
             textureView.setTransform(matrix);
-
-            float scaledWidth = width * scaleX;
-            float scaledHeight = height * scaleY;
-
-            float dx = (width - scaledWidth) / 2;
-            float dy = (height - scaledHeight) / 2;
-            textureView.setTranslationX(dx);
-            textureView.setTranslationY(dy);
-             */
+            Log.d(TAG, "transform matrix: " + matrix.toString());
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -284,7 +259,7 @@ public class CameraActivity extends AppCompatActivity {
     private void createCameraPreview() {
         try {
             SurfaceTexture texture = textureView.getSurfaceTexture();
-            texture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            texture.setDefaultBufferSize(imageDimensions.getWidth(), imageDimensions.getHeight());
             Surface surface = new Surface(texture);
 
             // Create the request for the camera preview.
