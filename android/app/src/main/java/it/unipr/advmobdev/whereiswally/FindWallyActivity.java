@@ -1,10 +1,9 @@
 package it.unipr.advmobdev.whereiswally;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -13,7 +12,6 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.FileNotFoundException;
-import java.io.InputStream;
 
 /**
  * This is the activity where the magic happens.
@@ -33,10 +31,11 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * Image view that shows input or output image.
      */
     private ImageView imageView;
+
     /**
-     * Input image as bitmap.
+     * ViewModel to handle displayed images during device rotation.
      */
-    private Bitmap inputImage;
+    private FindWallyViewModel model;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,15 +44,21 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
 
         loadingOverlay = findViewById(R.id.loading_overlay);
         imageView = findViewById(R.id.img_input);
-        // Load the passed image from the storage.
+
         String uri = getIntent().getStringExtra(EXTRA_IMG_URI);
         try {
             if (uri == null) {
                 throw new FileNotFoundException("Empty image uri in intent");
             }
-            InputStream is = getContentResolver().openInputStream(Uri.parse(uri));
-            inputImage = BitmapFactory.decodeStream(is);
-            imageView.setImageBitmap(inputImage);
+            // Initialize view model.
+            model = new ViewModelProvider(this, new ViewModelProvider.NewInstanceFactory())
+                    .get(FindWallyViewModel.class);
+            if (model.hasOutputImage()) {
+                imageView.setImageBitmap(model.getOutputImage());
+            } else {
+                model.loadInputImage(uri, getContentResolver());
+                imageView.setImageBitmap(model.getInputImage());
+            }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -61,9 +66,9 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
             return;
         }
 
+        // Setup click listeners for buttons.
         Button findWallyButton = findViewById(R.id.btn_find_wally);
         findWallyButton.setOnClickListener(this);
-
         Button cancelButton = findViewById(R.id.btn_cancel);
         cancelButton.setOnClickListener(this);
     }
@@ -96,7 +101,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * @return the input image as a bitmap.
      */
     public Bitmap getInputImage() {
-        return inputImage;
+        return model.getInputImage();
     }
 
     /**
@@ -104,6 +109,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * @param outputImage The image to be shown.
      */
     public void showOutputImage(final Bitmap outputImage) {
+        model.setOutputImage(outputImage);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
