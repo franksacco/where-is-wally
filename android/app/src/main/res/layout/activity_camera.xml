@@ -21,7 +21,7 @@
         android:layout_margin="36dp"
         android:clickable="true"
         android:focusable="true"
-        app:srcCompat="@android:drawable/ic_menu_camera"
+        app:srcCompat="@drawable/ic_photo_camera_white_24dp"
         style="@style/Widget.MaterialComponents.FloatingActionButton" />
 
 </FrameLayout>
