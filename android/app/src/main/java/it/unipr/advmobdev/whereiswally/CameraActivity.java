@@ -17,6 +17,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -236,7 +237,6 @@ public class CameraActivity extends AppCompatActivity {
             Matrix matrix = new Matrix();
             matrix.setScale(xScale, yScale);
             textureView.setTransform(matrix);
-            Log.d(TAG, "transform matrix: " + matrix.toString());
 
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -364,14 +364,14 @@ public class CameraActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             Toast.makeText(CameraActivity.this,
-                                    "Photo saved in " + file.getAbsolutePath(),
+                                    "Photo saved",
                                     Toast.LENGTH_SHORT).show();
                         }
                     });
 
                     // Pass the filename of the acquired image to FindWallyActivity.
                     Intent intent = new Intent(CameraActivity.this, FindWallyActivity.class);
-                    intent.putExtra(FindWallyActivity.EXTRA_IMG_URI, file.getAbsolutePath());
+                    intent.putExtra(FindWallyActivity.EXTRA_IMG_URI, Uri.fromFile(file).toString());
                     startActivity(intent);
 
                 }
