@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -25,9 +26,11 @@ import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.Gravity;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -61,6 +64,9 @@ public class CameraActivity extends AppCompatActivity {
      * Texture for camera preview.
      */
     private TextureView textureView;
+    /**
+     * Listener for texture view.
+     */
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
@@ -78,6 +84,11 @@ public class CameraActivity extends AppCompatActivity {
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
     };
+
+    /**
+     * Take picture button.
+     */
+    FloatingActionButton takePictureButton;
 
     /**
      * System service manager for camera devices.
@@ -133,6 +144,9 @@ public class CameraActivity extends AppCompatActivity {
      */
     private CameraCaptureSession cameraCaptureSessions;
 
+    /**
+     * The dimensions of preview image.
+     */
     private Size imageDimensions;
 
     /**
@@ -141,24 +155,41 @@ public class CameraActivity extends AppCompatActivity {
     private HandlerThread backgroundHandlerThread;
     private Handler backgroundHandler;
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
 
+        // Handle texture view.
         textureView = findViewById(R.id.cameraPreview);
         textureView.setSurfaceTextureListener(textureListener);
 
-        FloatingActionButton takePictureButton = findViewById(R.id.btn_take_picture);
+        // Handle take picture button.
+        takePictureButton = findViewById(R.id.btn_take_picture);
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "Take picture button clicked");
                 takePicture();
             }
         });
+        // Set the position of take picture button.
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) takePictureButton.getLayoutParams();
+        switch (rotation) {
+            case Surface.ROTATION_0:
+            case Surface.ROTATION_180:
+                params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+                break;
+            case Surface.ROTATION_90:
+                params.gravity = Gravity.CENTER_VERTICAL | Gravity.END;
+                break;
+            case Surface.ROTATION_270:
+                params.gravity = Gravity.CENTER_VERTICAL | Gravity.START;
+                break;
+        }
+        takePictureButton.setLayoutParams(params);
 
+        // Get camera manager service.
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         if (cameraManager == null) {
             Log.e(TAG, "Camera manager is null");
@@ -231,16 +262,43 @@ public class CameraActivity extends AppCompatActivity {
             // Finally, open the camera device.
             cameraManager.openCamera(cameraId, stateCallback, null);
 
-            // Calculate the matrix to fit image inside the view.
-            float xScale = ((float) imageDimensions.getHeight()) / textureView.getWidth();
-            float yScale = ((float) imageDimensions.getWidth()) / textureView.getHeight();
-            Matrix matrix = new Matrix();
-            matrix.setScale(xScale, yScale);
-            textureView.setTransform(matrix);
-
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+
+        scaleAndRotateTextureView();
+    }
+
+    /**
+     * Add transformations to texture view in order to have a good preview.
+     */
+    private void scaleAndRotateTextureView() {
+        int viewWidth = textureView.getWidth();
+        int viewHeight = textureView.getHeight();
+        RectF viewRect = new RectF(0, 0, viewWidth, viewHeight);
+        RectF bufferRect = new RectF(0, 0, imageDimensions.getHeight(), imageDimensions.getWidth());
+        float centerX = viewRect.centerX();
+        float centerY = viewRect.centerY();
+
+        Matrix matrix = new Matrix();
+
+        // Fit the image inside the view respecting aspect ratio.
+        bufferRect.offset(centerX - bufferRect.centerX(), centerY - bufferRect.centerY());
+        matrix.setRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.FILL);
+        float scale = Math.max(
+                (float) viewHeight / imageDimensions.getHeight(),
+                (float) viewWidth / imageDimensions.getWidth());
+        matrix.postScale(scale, scale, centerX, centerY);
+
+        // Rotate image according to device orientation.
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
+            matrix.postRotate(90 * (rotation - 2), centerX, centerY);
+        } else if (rotation == Surface.ROTATION_180) {
+            matrix.postRotate(180, centerX, centerY);
+        }
+
+        textureView.setTransform(matrix);
     }
 
     /**
