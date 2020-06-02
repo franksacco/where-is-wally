@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layout_find_wally"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,7 +20,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|top"
-        android:layout_margin="12dp"
+        android:layout_margin="16dp"
         android:text="@string/btn_cancel"
         android:textColor="@android:color/white"
         android:backgroundTint="#20000000"
@@ -32,7 +32,20 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|bottom"
         android:text="@string/btn_find_wally"
-        android:layout_margin="24dp"
+        android:layout_margin="16dp"
+        app:icon="@drawable/ic_baseline_search_24"
+        style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton" />
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/btn_stats"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_margin="16dp"
+        android:alpha="0"
+        android:visibility="gone"
+        android:text="@string/stats"
+        app:icon="@drawable/ic_baseline_bar_chart_24"
         style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton" />
 
     <LinearLayout

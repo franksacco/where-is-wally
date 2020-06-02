@@ -173,7 +173,7 @@ class ModelExecutor extends Thread {
             // Restore the original size of the image.
             image = restoreInitialSize(image);
             // Show final result to the user.
-            activity.showOutputImage(image);
+            activity.onModelExecutionEnd(image);
         }
     }
 
