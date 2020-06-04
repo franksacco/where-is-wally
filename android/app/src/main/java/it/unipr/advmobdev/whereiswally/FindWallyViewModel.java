@@ -14,8 +14,25 @@ import java.io.InputStream;
  * View model used to maintain FindWallyActivity's data during rotation.
  */
 public class FindWallyViewModel extends ViewModel {
+    /**
+     * The input image.
+     */
     private Bitmap inputImage;
+
+    /**
+     * The output image.
+     */
     private Bitmap outputImage;
+
+    /**
+     * The output mask.
+     */
+    private Bitmap outputMask;
+
+    /**
+     * The statistics about execution.
+     */
+    private Statistics stats;
 
     /**
      * Load input image from storage.
@@ -41,13 +58,22 @@ public class FindWallyViewModel extends ViewModel {
     }
 
     /**
-     * Check whether the output image is set.
+     * Check whether the model is executed.
      *
-     * @return <code>true</code> if output image is available,
-     *     <code>false</code> otherwise.
+     * @return <code>true</code> if output image, output mask and statistics
+     *         are available, <code>false</code> otherwise.
      */
-    boolean hasOutputImage() {
-        return outputImage != null;
+    boolean isModelExecuted() {
+        return outputImage != null && outputMask != null && stats != null;
+    }
+
+    /**
+     * Set the output image.
+     *
+     * @param outputImage The output image.
+     */
+    void setOutputImage(Bitmap outputImage) {
+        this.outputImage = outputImage;
     }
 
     /**
@@ -60,11 +86,38 @@ public class FindWallyViewModel extends ViewModel {
     }
 
     /**
-     * Set the output image.
+     * Set the output mask.
      *
-     * @param outputImage The output image.
+     * @param outputMask The output mask.
      */
-    void setOutputImage(Bitmap outputImage) {
-        this.outputImage = outputImage;
+    public void setOutputMask(Bitmap outputMask) {
+        this.outputMask = outputMask;
+    }
+
+    /**
+     * Get the output mask.
+     *
+     * @return the output mask if set, <code>null</code> otherwise.
+     */
+    public Bitmap getOutputMask() {
+        return outputMask;
+    }
+
+    /**
+     * Set the statistics about execution.
+     *
+     * @param stats The statistics about execution.
+     */
+    public void setStats(Statistics stats) {
+        this.stats = stats;
+    }
+
+    /**
+     * Get the statistics about execution.
+     *
+     * @return the statistics if set, <code>null</code> otherwise.
+     */
+    public Statistics getStats() {
+        return stats;
     }
 }

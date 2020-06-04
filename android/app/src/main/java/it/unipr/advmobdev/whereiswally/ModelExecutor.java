@@ -120,6 +120,10 @@ class ModelExecutor extends Thread {
 
     @Override
     public void run() {
+        Statistics stats = new Statistics();
+        stats.setMaxParallelTasks(MAX_NUM_THREAD);
+        stats.triggerTotalExecutionStart();
+
         Interpreter interpreter;
         try {
             interpreter = loadInterpreter();
@@ -143,7 +147,7 @@ class ModelExecutor extends Thread {
         // Determine how many sub-images and tasks will be created for each axis.
         int numTasksX = image.getWidth() / SUB_IMAGE_SIZE;
         int numTasksY = image.getHeight() / SUB_IMAGE_SIZE;
-        Log.d(TAG, "Number of sub-images/tasks: " + (numTasksX * numTasksY));
+        stats.setTasksNumber(numTasksX * numTasksY);
 
         // Associate each sub-image to a single task.
         List<Callable<Bitmap>> tasks = getTaskList(interpreter, image, numTasksX, numTasksY);
@@ -151,7 +155,10 @@ class ModelExecutor extends Thread {
         ExecutorService executor = Executors.newFixedThreadPool(MAX_NUM_THREAD);
         Bitmap mask = null;
         try {
+            stats.triggerModelExecutionStart();
             List<Future<Bitmap>> results = executor.invokeAll(tasks);
+            stats.triggerModelExecutionEnd();
+
             // Create the final mask to be applied on the image.
             mask = composeSubMasks(image, results, numTasksX, numTasksY);
 
@@ -172,8 +179,11 @@ class ModelExecutor extends Thread {
 
             // Restore the original size of the image.
             image = restoreInitialSize(image);
+            mask = restoreInitialSize(mask);
+
             // Show final result to the user.
-            activity.onModelExecutionEnd(image);
+            stats.triggerTotalExecutionEnd();
+            activity.onModelExecutionEnd(image, mask, stats);
         }
     }
 
@@ -303,8 +313,7 @@ class ModelExecutor extends Thread {
                     g = (rgb >> 8) & 0xff;
                     b = rgb & 0xff;
                     gray = (r + g + b) / 3;
-                    image.setPixel(x, y,
-                            0xff000000 | (gray << 16) | (gray << 8) | gray);
+                    image.setPixel(x, y, 0xff000000 | (gray << 16) | (gray << 8) | gray);
                 }
             }
         }

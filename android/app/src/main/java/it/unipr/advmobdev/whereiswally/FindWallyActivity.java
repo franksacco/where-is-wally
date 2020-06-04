@@ -47,7 +47,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
     /**
      * ViewModel to handle displayed images during device rotation.
      */
-    private FindWallyViewModel model;
+    private FindWallyViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,13 +63,13 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
                 throw new FileNotFoundException("Empty image uri in intent");
             }
             // Initialize view model.
-            model = new ViewModelProvider(this, new ViewModelProvider.NewInstanceFactory())
+            viewModel = new ViewModelProvider(this, new ViewModelProvider.NewInstanceFactory())
                     .get(FindWallyViewModel.class);
-            if (model.hasOutputImage()) {
-                imageView.setImageBitmap(model.getOutputImage());
+            if (viewModel.isModelExecuted()) {
+                imageView.setImageBitmap(viewModel.getOutputImage());
             } else {
-                model.loadInputImage(uri, getContentResolver());
-                imageView.setImageBitmap(model.getInputImage());
+                viewModel.loadInputImage(uri, getContentResolver());
+                imageView.setImageBitmap(viewModel.getInputImage());
             }
 
         } catch (FileNotFoundException e) {
@@ -86,7 +86,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
         Button cancelButton = findViewById(R.id.btn_cancel);
         cancelButton.setOnClickListener(this);
 
-        if (model.hasOutputImage()) {
+        if (viewModel.isModelExecuted()) {
             // Show correct button when activity is created.
             searchButton.setAlpha(0);
             searchButton.setVisibility(View.GONE);
@@ -118,7 +118,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
                 break;
 
             case R.id.btn_stats:
-                DialogFragment fragment = new StatisticsDialogFragment();
+                DialogFragment fragment = new StatisticsDialogFragment(viewModel);
                 fragment.show(getSupportFragmentManager(), "stats");
                 break;
 
@@ -137,18 +137,27 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
 
     /**
      * Get the input image.
+     *
      * @return the input image as a bitmap.
      */
     public Bitmap getInputImage() {
-        return model.getInputImage();
+        return viewModel.getInputImage();
     }
 
     /**
      * Show the output image when the model execution ends.
+     *
      * @param outputImage The output image to be shown.
+     * @param outputMask The output mask returned by the model.
+     * @param stats The statistics about execution.
      */
-    public void onModelExecutionEnd(final Bitmap outputImage) {
-        model.setOutputImage(outputImage);
+    public void onModelExecutionEnd(final Bitmap outputImage,
+                                    final Bitmap outputMask,
+                                    final Statistics stats) {
+        viewModel.setOutputImage(outputImage);
+        viewModel.setOutputMask(outputMask);
+        viewModel.setStats(stats);
+
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -174,6 +183,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
 
     /**
      * Show a message error to the user.
+     *
      * @param message The error message to be shown.
      */
     public void showError(final String message) {
@@ -190,11 +200,18 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * Dialog fragment for statistics.
      */
     public static class StatisticsDialogFragment extends DialogFragment {
+        private FindWallyViewModel viewModel;
+
+        public StatisticsDialogFragment(FindWallyViewModel viewModel) {
+            super();
+            this.viewModel = viewModel;
+        }
+
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.DialogTheme);
             builder.setTitle(R.string.stats)
-                    .setMessage("Statistics...")
+                    .setMessage(viewModel.getStats().toString())
                     .setPositiveButton(R.string.close, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
