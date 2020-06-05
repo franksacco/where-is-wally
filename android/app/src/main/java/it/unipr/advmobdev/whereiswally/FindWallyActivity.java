@@ -190,7 +190,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(FindWallyActivity.this, message, Toast.LENGTH_SHORT)
+                Toast.makeText(FindWallyActivity.this, message, Toast.LENGTH_LONG)
                         .show();
             }
         });
