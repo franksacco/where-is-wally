@@ -52,12 +52,21 @@ class ModelExecutor extends Thread {
      * Task that predict the mask for a single sub-image.
      */
     private static class SubImageTask implements Callable<Bitmap> {
-        private Interpreter interpreter;
-        private Bitmap subImage;
+        private final Interpreter interpreter;
+        private final Bitmap subImage;
+        private final Runnable onTaskEnd;
 
-        SubImageTask(Interpreter interpreter, Bitmap subImage) {
+        /**
+         * Initialize task to apply model on a sub-image.
+         *
+         * @param interpreter The model to be run.
+         * @param subImage The image on which the model will be applied.
+         * @param onTaskEnd The runnable called at the end of the task.
+         */
+        SubImageTask(Interpreter interpreter, Bitmap subImage, Runnable onTaskEnd) {
             this.interpreter = interpreter;
             this.subImage = subImage;
+            this.onTaskEnd = onTaskEnd;
         }
 
         @Override
@@ -80,7 +89,9 @@ class ModelExecutor extends Thread {
             // Run the model.
             interpreter.run(input.getBuffer(), output.getBuffer());
 
-            return convertByteBufferToBitmap(output.getBuffer());
+            Bitmap outputMask = convertByteBufferToBitmap(output.getBuffer());
+            onTaskEnd.run();
+            return outputMask;
         }
 
         /**
@@ -112,6 +123,9 @@ class ModelExecutor extends Thread {
      * Reference to the android activity.
      */
     private FindWallyActivity activity;
+
+    private float progress = 0;
+    private float progressIncrement;
 
     ModelExecutor(FindWallyActivity activity) {
         super();
@@ -147,7 +161,9 @@ class ModelExecutor extends Thread {
         // Determine how many sub-images and tasks will be created for each axis.
         int numTasksX = image.getWidth() / SUB_IMAGE_SIZE;
         int numTasksY = image.getHeight() / SUB_IMAGE_SIZE;
-        stats.setTasksNumber(numTasksX * numTasksY);
+        int numTasks = numTasksX * numTasksY;
+        stats.setTasksNumber(numTasks);
+        progressIncrement = 100f / numTasks;
 
         // Associate each sub-image to a single task.
         List<Callable<Bitmap>> tasks = getTaskList(interpreter, image, numTasksX, numTasksY);
@@ -156,7 +172,9 @@ class ModelExecutor extends Thread {
         Bitmap mask = null;
         try {
             stats.triggerModelExecutionStart();
+            activity.updateProgress(0);
             List<Future<Bitmap>> results = executor.invokeAll(tasks);
+            activity.updateProgress(-1);
             stats.triggerModelExecutionEnd();
 
             // Create the final mask to be applied on the image.
@@ -250,6 +268,14 @@ class ModelExecutor extends Thread {
                                                int numSubImagesX,
                                                int numSubImagesY)
     {
+        Runnable onTaskEnd = new Runnable() {
+            @Override
+            public void run() {
+                progress += progressIncrement;
+                activity.updateProgress((int) progress);
+            }
+        };
+
         List<Callable<Bitmap>> tasks = new ArrayList<>();
         Bitmap subImage;
         for (int j = 0; j < numSubImagesY; j++) {
@@ -257,7 +283,7 @@ class ModelExecutor extends Thread {
                 subImage = Bitmap.createBitmap(image,
                         i * SUB_IMAGE_SIZE, j * SUB_IMAGE_SIZE,
                         SUB_IMAGE_SIZE, SUB_IMAGE_SIZE);
-                tasks.add(new SubImageTask(interpreter, subImage));
+                tasks.add(new SubImageTask(interpreter, subImage, onTaskEnd));
             }
         }
         return tasks;

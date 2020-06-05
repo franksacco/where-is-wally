@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.FileNotFoundException;
@@ -30,6 +31,11 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * Relative layout used as overlay during model execution.
      */
     private LinearLayout loadingOverlay;
+    /**
+     * Loading spinner.
+     */
+    private ProgressBar progressBar;
+
     /**
      * Button that starts Wally search.
      */
@@ -55,6 +61,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
         setContentView(R.layout.activity_find_wally);
 
         loadingOverlay = findViewById(R.id.loading_overlay);
+        progressBar = findViewById(R.id.loading_progress);
         imageView = findViewById(R.id.img_input);
 
         String uri = getIntent().getStringExtra(EXTRA_IMG_URI);
@@ -142,6 +149,30 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      */
     public Bitmap getInputImage() {
         return viewModel.getInputImage();
+    }
+
+    /**
+     * Update the progress of the spinner.
+     *
+     * If the provided progress is not between 0 and 100, the mode of the
+     * progress bar wil be set to indeterminate.
+     *
+     * @param progress The new progress.
+     */
+    public void updateProgress(final int progress) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (progress >= 0 && progress <= 100) {
+                    if (progressBar.isIndeterminate()) {
+                        progressBar.setIndeterminate(false);
+                    }
+                    progressBar.setProgress(progress);
+                } else {
+                    progressBar.setIndeterminate(true);
+                }
+            }
+        });
     }
 
     /**
