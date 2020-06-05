@@ -23,7 +23,7 @@
         android:layout_margin="16dp"
         android:text="@string/btn_cancel"
         android:textColor="@android:color/white"
-        android:backgroundTint="#20000000"
+        android:backgroundTint="#50000000"
         style="?attr/materialButtonOutlinedStyle" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
@@ -35,6 +35,19 @@
         android:layout_margin="16dp"
         app:icon="@drawable/ic_baseline_search_24"
         style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_mask"
+        android:drawableStart="@drawable/ic_baseline_visibility_off_24"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|top"
+        android:layout_margin="16dp"
+        android:text="@string/btn_mask"
+        android:alpha="0"
+        android:visibility="gone"
+        app:icon="@drawable/ic_baseline_visibility_off_24"
+        style="?attr/materialButtonStyle" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/btn_stats"

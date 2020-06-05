@@ -30,6 +30,11 @@ public class FindWallyViewModel extends ViewModel {
     private Bitmap outputMask;
 
     /**
+     * Whether the output mask is showed.
+     */
+    private boolean isVisibleOutputMask;
+
+    /**
      * The statistics about execution.
      */
     private Statistics stats;
@@ -101,6 +106,25 @@ public class FindWallyViewModel extends ViewModel {
      */
     public Bitmap getOutputMask() {
         return outputMask;
+    }
+
+    /**
+     * Check whether the output mask is visible.
+     *
+     * @return <code>true</code> if the output mask is visible,
+     *         <code>false</code> otherwise.
+     */
+    public boolean isVisibleOutputMask() {
+        return isVisibleOutputMask;
+    }
+
+    /**
+     * Set whether the output mask is visible.
+     *
+     * @param isVisibleOutputMask Whether the output mask is visible.
+     */
+    public void setIsVisibleOutputMask(boolean isVisibleOutputMask) {
+        this.isVisibleOutputMask = isVisibleOutputMask;
     }
 
     /**

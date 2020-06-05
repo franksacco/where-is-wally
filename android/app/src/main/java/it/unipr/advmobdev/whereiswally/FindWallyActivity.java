@@ -16,6 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
+
 import java.io.FileNotFoundException;
 
 /**
@@ -44,6 +46,10 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * Button that shows statistics.
      */
     private Button statsButton;
+    /**
+     * Button that shows the output mask.
+     */
+    private MaterialButton maskButton;
 
     /**
      * Image view that shows input or output image.
@@ -73,7 +79,8 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
             viewModel = new ViewModelProvider(this, new ViewModelProvider.NewInstanceFactory())
                     .get(FindWallyViewModel.class);
             if (viewModel.isModelExecuted()) {
-                imageView.setImageBitmap(viewModel.getOutputImage());
+                imageView.setImageBitmap(viewModel.isVisibleOutputMask() ?
+                        viewModel.getOutputMask() : viewModel.getOutputImage());
             } else {
                 viewModel.loadInputImage(uri, getContentResolver());
                 imageView.setImageBitmap(viewModel.getInputImage());
@@ -90,6 +97,8 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
         searchButton.setOnClickListener(this);
         statsButton = findViewById(R.id.btn_stats);
         statsButton.setOnClickListener(this);
+        maskButton = findViewById(R.id.btn_mask);
+        maskButton.setOnClickListener(this);
         Button cancelButton = findViewById(R.id.btn_cancel);
         cancelButton.setOnClickListener(this);
 
@@ -97,8 +106,12 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
             // Show correct button when activity is created.
             searchButton.setAlpha(0);
             searchButton.setVisibility(View.GONE);
-            statsButton.setVisibility(View.VISIBLE);
             statsButton.setAlpha(1);
+            statsButton.setVisibility(View.VISIBLE);
+            maskButton.setAlpha(1);
+            maskButton.setVisibility(View.VISIBLE);
+            maskButton.setIcon(getDrawable(viewModel.isVisibleOutputMask() ?
+                    R.drawable.ic_baseline_visibility_24 : R.drawable.ic_baseline_visibility_off_24));
         }
     }
 
@@ -127,6 +140,15 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
             case R.id.btn_stats:
                 DialogFragment fragment = new StatisticsDialogFragment(viewModel);
                 fragment.show(getSupportFragmentManager(), "stats");
+                break;
+
+            case R.id.btn_mask:
+                boolean isVisible = viewModel.isVisibleOutputMask();
+                viewModel.setIsVisibleOutputMask(!isVisible);
+                imageView.setImageBitmap(isVisible ?
+                        viewModel.getOutputImage() : viewModel.getOutputMask());
+                maskButton.setIcon(getDrawable(isVisible ?
+                        R.drawable.ic_baseline_visibility_off_24 : R.drawable.ic_baseline_visibility_24));
                 break;
 
             case R.id.btn_cancel:
@@ -202,6 +224,9 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
                             }
                         });
 
+                // Show mask button.
+                maskButton.setVisibility(View.VISIBLE);
+                maskButton.animate().alpha(1);
                 // Show statistics button.
                 statsButton.setVisibility(View.VISIBLE);
                 statsButton.animate().alpha(1);
