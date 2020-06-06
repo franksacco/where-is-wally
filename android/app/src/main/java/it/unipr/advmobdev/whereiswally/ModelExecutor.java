@@ -38,10 +38,6 @@ class ModelExecutor extends Thread {
      * Height and width of sub-images.
      */
     private static final int SUB_IMAGE_SIZE = 256;
-    /**
-     * Maximum number of concurrent sub-image tasks.
-     */
-    private static final int MAX_NUM_THREAD = 2;
 
     /**
      * Task that predict the mask for a single sub-image.
@@ -120,6 +116,11 @@ class ModelExecutor extends Thread {
     private FindWallyActivity activity;
 
     /**
+     * The number of parallel tasks.
+     */
+    private final int parallelTasksNumber;
+
+    /**
      * Whether the GPU acceleration is enabled.
      */
     private final boolean isGpuAccelerationEnabled;
@@ -137,11 +138,13 @@ class ModelExecutor extends Thread {
      * Initialize the model executor.
      *
      * @param activity The activity that launched the execution.
+     * @param parallelTasksNumber The number of parallel tasks.
      * @param isGpuAccelerationEnabled Whether the GPU acceleration is enabled.
      */
-    ModelExecutor(FindWallyActivity activity, boolean isGpuAccelerationEnabled) {
+    ModelExecutor(FindWallyActivity activity, int parallelTasksNumber, boolean isGpuAccelerationEnabled) {
         super();
         this.activity = activity;
+        this.parallelTasksNumber = parallelTasksNumber;
         this.isGpuAccelerationEnabled = isGpuAccelerationEnabled;
     }
 
@@ -149,7 +152,7 @@ class ModelExecutor extends Thread {
     public void run() {
         Statistics stats = new Statistics();
         stats.setGpuAccelerationEnabled(isGpuAccelerationEnabled);
-        stats.setParallelTasksNumber(MAX_NUM_THREAD);
+        stats.setParallelTasksNumber(parallelTasksNumber);
         stats.triggerTotalExecutionStart();
 
         Interpreter interpreter;
@@ -182,7 +185,7 @@ class ModelExecutor extends Thread {
         // Associate each sub-image to a single task.
         List<Callable<Bitmap>> tasks = getTaskList(interpreter, image, numTasksX, numTasksY);
         // Execute all tasks using a thread pool with a fixed number of threads.
-        ExecutorService executor = Executors.newFixedThreadPool(MAX_NUM_THREAD);
+        ExecutorService executor = Executors.newFixedThreadPool(parallelTasksNumber);
         Bitmap mask = null;
         try {
             stats.triggerModelExecutionStart();
