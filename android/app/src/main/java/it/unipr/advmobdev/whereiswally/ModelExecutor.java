@@ -3,7 +3,6 @@ package it.unipr.advmobdev.whereiswally;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.util.Log;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
@@ -31,10 +30,6 @@ import java.util.concurrent.Future;
  * Background task used to load and run the model.
  */
 class ModelExecutor extends Thread {
-    /**
-     * Activity tag for logging.
-     */
-    private static final String TAG = "ModelExecutor";
     /**
      * Model filename in assets folder.
      */
@@ -124,18 +119,37 @@ class ModelExecutor extends Thread {
      */
     private FindWallyActivity activity;
 
+    /**
+     * Whether the GPU acceleration is enabled.
+     */
+    private final boolean isGpuAccelerationEnabled;
+
+    /**
+     * Current progress on the execution of tasks.
+     */
     private float progress = 0;
+    /**
+     * Progress increment based on the number of tasks.
+     */
     private float progressIncrement;
 
-    ModelExecutor(FindWallyActivity activity) {
+    /**
+     * Initialize the model executor.
+     *
+     * @param activity The activity that launched the execution.
+     * @param isGpuAccelerationEnabled Whether the GPU acceleration is enabled.
+     */
+    ModelExecutor(FindWallyActivity activity, boolean isGpuAccelerationEnabled) {
         super();
         this.activity = activity;
+        this.isGpuAccelerationEnabled = isGpuAccelerationEnabled;
     }
 
     @Override
     public void run() {
         Statistics stats = new Statistics();
-        stats.setMaxParallelTasks(MAX_NUM_THREAD);
+        stats.setGpuAccelerationEnabled(isGpuAccelerationEnabled);
+        stats.setParallelTasksNumber(MAX_NUM_THREAD);
         stats.triggerTotalExecutionStart();
 
         Interpreter interpreter;
@@ -154,9 +168,9 @@ class ModelExecutor extends Thread {
         }
 
         Bitmap image = activity.getInputImage();
-        Log.d(TAG, "Initial size: " + image.getHeight() + " x " + image.getWidth());
+        stats.setOriginalSize(image.getWidth(), image.getHeight());
         image = makeSizeMultipleOfSubImage(image);
-        Log.d(TAG, "Padded size: " + image.getHeight() + " x " + image.getWidth());
+        stats.setPaddedSize(image.getWidth(), image.getHeight());
 
         // Determine how many sub-images and tasks will be created for each axis.
         int numTasksX = image.getWidth() / SUB_IMAGE_SIZE;
@@ -209,15 +223,19 @@ class ModelExecutor extends Thread {
      * Load model file from assets and create interpreter instance.
      *
      * @return the interpreter instance.
+     *
      * @throws IOException if model file not exists or cannot be opened.
      * @throws IllegalArgumentException if model file is badly encoded.
      */
     private Interpreter loadInterpreter() throws IOException, IllegalArgumentException {
         MappedByteBuffer model = FileUtil.loadMappedFile(activity, MODEL_FILENAME);
 
-        // The GPU Delegate allows the interpreter to run appropriate operations on the device's GPU.
-        GpuDelegate delegate = new GpuDelegate();
-        Interpreter.Options options = (new Interpreter.Options()).addDelegate(delegate);
+        Interpreter.Options options = new Interpreter.Options();
+        if (isGpuAccelerationEnabled) {
+            // The GPU Delegate allows the interpreter to run appropriate
+            // operations on the device's GPU.
+            options.addDelegate(new GpuDelegate());
+        }
         // Ensuring that interpreter uses only one thread for each sub-image.
         options.setNumThreads(1);
 

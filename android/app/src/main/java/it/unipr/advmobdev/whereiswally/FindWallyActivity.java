@@ -161,7 +161,7 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
      * Load and run the model using background tasks.
      */
     private void loadAndRunModel() {
-        new ModelExecutor(this).start();
+        new ModelExecutor(this, true).start();
     }
 
     /**
