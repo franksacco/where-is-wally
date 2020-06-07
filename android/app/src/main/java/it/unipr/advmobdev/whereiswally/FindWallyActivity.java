@@ -1,5 +1,6 @@
 package it.unipr.advmobdev.whereiswally;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -10,6 +11,8 @@ import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -17,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import java.io.FileNotFoundException;
 
@@ -119,27 +123,12 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_find_wally:
-                // Hide Find Wally button.
-                searchButton.animate()
-                        .alpha(0)
-                        .withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                searchButton.setVisibility(View.GONE);
-                            }
-                        });
-
-                // Show loading spinner with a transition.
-                loadingOverlay.setVisibility(View.VISIBLE);
-                loadingOverlay.animate().alpha(1);
-
-                // Start background thread for model execution.
-                FindWallyActivity.this.loadAndRunModel();
+                openFindWallyConfigDialog();
                 break;
 
             case R.id.btn_stats:
-                DialogFragment fragment = new StatisticsDialogFragment(viewModel);
-                fragment.show(getSupportFragmentManager(), "stats");
+                DialogFragment dialog = new StatisticsDialogFragment(viewModel);
+                dialog.show(getSupportFragmentManager(), "stats");
                 break;
 
             case R.id.btn_mask:
@@ -158,10 +147,35 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
     }
 
     /**
-     * Load and run the model using background tasks.
+     * Open the dialog for set the configuration for model execution.
      */
-    private void loadAndRunModel() {
-        new ModelExecutor(this, 1, true).start();
+    private void openFindWallyConfigDialog() {
+        FindWallyConfigDialogFragment.RunModelCallable callable =
+                new FindWallyConfigDialogFragment.RunModelCallable() {
+            @Override
+            public void run(int parallelTasksNumber, boolean isGpuAccelerationEnabled) {
+                // Hide Find Wally button.
+                searchButton.animate()
+                        .alpha(0)
+                        .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                searchButton.setVisibility(View.GONE);
+                            }
+                        });
+
+                // Show loading spinner with a transition.
+                loadingOverlay.setVisibility(View.VISIBLE);
+                loadingOverlay.animate().alpha(1);
+
+                // Load and run the model using background tasks.
+                new ModelExecutor(FindWallyActivity.this,
+                        parallelTasksNumber, isGpuAccelerationEnabled).start();
+            }
+        };
+
+        DialogFragment dialog = new FindWallyConfigDialogFragment(callable);
+        dialog.show(getSupportFragmentManager(), "execution-config");
     }
 
     /**
@@ -253,6 +267,53 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
     }
 
     /**
+     * Dialog fragment for model execution configuration.
+     */
+    public static class FindWallyConfigDialogFragment extends DialogFragment {
+        interface RunModelCallable {
+            void run(int parallelTasksNumber, boolean isGpuAccelerationEnabled);
+        }
+
+        private final RunModelCallable runModelCallable;
+
+        public FindWallyConfigDialogFragment(RunModelCallable runModelCallable) {
+            super();
+            this.runModelCallable = runModelCallable;
+        }
+
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.DialogTheme);
+
+            View view = getActivity().getLayoutInflater().inflate(R.layout.find_wally_dialog, null);
+
+            final SwitchMaterial gpuAccelerationInput = view.findViewById(R.id.input_gpuAccelerationEnabled);
+            final AutoCompleteTextView parallelTasksInput = view.findViewById(R.id.input_parallelTasksNumber);
+            final ArrayAdapter<Integer> adapter = new ArrayAdapter<>(requireContext(), R.layout.list_item);
+            adapter.addAll(1, 2, 3, 4);
+            parallelTasksInput.setAdapter(adapter);
+
+            builder.setView(view)
+                    .setTitle("Find Wally")
+                    .setPositiveButton("Run", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            runModelCallable.run(
+                                    Integer.parseInt(parallelTasksInput.getText().toString()),
+                                    gpuAccelerationInput.isChecked()
+                            );
+                        }
+                    })
+                    .setNegativeButton(R.string.close, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {}
+                    });
+            return builder.create();
+        }
+    }
+
+    /**
      * Dialog fragment for statistics.
      */
     public static class StatisticsDialogFragment extends DialogFragment {
@@ -263,15 +324,15 @@ public class FindWallyActivity extends AppCompatActivity implements View.OnClick
             this.viewModel = viewModel;
         }
 
+        @NonNull
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
             AlertDialog.Builder builder = new AlertDialog.Builder(getActivity(), R.style.DialogTheme);
             builder.setTitle(R.string.stats)
                     .setMessage(viewModel.getStats().toString())
-                    .setPositiveButton(R.string.close, new DialogInterface.OnClickListener() {
+                    .setNegativeButton(R.string.close, new DialogInterface.OnClickListener() {
                         @Override
-                        public void onClick(DialogInterface dialog, int id) {
-                        }
+                        public void onClick(DialogInterface dialog, int id) {}
                     });
             return builder.create();
         }

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp">
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/input_gpuAccelerationEnabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/use_gpu_acceleration"
+        android:checked="true"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/number_of_parallel_tasks"
+        android:labelFor="@id/input_parallelTasksNumber"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+        <AutoCompleteTextView
+            android:id="@+id/input_parallelTasksNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:focusable="false"
+            android:text="@string/default_parallel_tasks_number" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>
