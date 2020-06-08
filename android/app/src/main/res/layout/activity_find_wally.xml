@@ -23,7 +23,7 @@
         android:layout_margin="16dp"
         android:text="@string/btn_cancel"
         android:textColor="@android:color/white"
-        android:backgroundTint="#50000000"
+        android:backgroundTint="#80000000"
         style="?attr/materialButtonOutlinedStyle" />
 
     <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
