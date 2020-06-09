@@ -17,6 +17,16 @@ Click *Make Project* to build the app and download all the required dependencies
 Click *Run app* to install the app on your device or emulator.
 
 
+## Screenshots
+
+<p float="left">
+  <img width="33%" src="android/graphics/screenshot_1.png" alt="Screeshot 1">
+  <img width="33%" src="android/graphics/screenshot_2.png" alt="Screeshot 2">
+  <img width="33%" src="android/graphics/screenshot_3.png" alt="Screeshot 3">
+</p>
+
+
+
 ## Performances
 
 I installed the application on my phone and I ran some tests using 3 sample images to measure the time it took to locate Wally.
