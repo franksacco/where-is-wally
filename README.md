@@ -20,9 +20,9 @@ Click *Run app* to install the app on your device or emulator.
 ## Screenshots
 
 <p float="left">
-  <img width="33%" src="android/graphics/screenshot_1.png" alt="Screeshot 1">
-  <img width="33%" src="android/graphics/screenshot_2.png" alt="Screeshot 2">
-  <img width="33%" src="android/graphics/screenshot_3.png" alt="Screeshot 3">
+  <img width="32%" src="android/graphics/screenshot_1.png" alt="Screeshot 1">
+  <img width="32%" src="android/graphics/screenshot_2.png" alt="Screeshot 2">
+  <img width="32%" src="android/graphics/screenshot_3.png" alt="Screeshot 3">
 </p>
 
 
